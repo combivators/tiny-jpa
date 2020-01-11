@@ -1,0 +1,8 @@
+config:
+  handlers: ${handler.log}
+#
+handler:
+  log:
+    class:   net.tiny.dao.EntityService
+    path:    /v1/dao/log
+    dao:     net.tiny.dao.test.LogDao
