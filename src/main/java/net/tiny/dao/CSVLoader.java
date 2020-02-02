@@ -10,6 +10,7 @@ import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -22,6 +23,8 @@ import net.tiny.dao.reference.Column;
 import net.tiny.dao.reference.SchemaParser;
 
 public class CSVLoader {
+
+	private static String TABLE_ORDERING_FILE = "table-ordering.txt";
 
     private final Builder builder;
 
@@ -199,6 +202,33 @@ public class CSVLoader {
             sql = generateLoadDataSql(options, columns, false);
         }
         loadGeneral(connection, options, sql);
+    }
+
+    static List<CSVLoader.Options> options(String path) throws IOException {
+    	List<CSVLoader.Options> options = new ArrayList<>();
+    	Path table = Paths.get(path, TABLE_ORDERING_FILE);
+    	if (!Files.exists(table)) {
+    		throw new IllegalArgumentException(String.format("Not found '%s' file in '%s'.", TABLE_ORDERING_FILE, path));
+    	}
+    	List<String> lines = Files.readAllLines(table);
+    	for (String tab : lines) {
+            CSVLoader.Options op = new CSVLoader.Options(String.format("%s/%s.csv", path, tab), tab)
+                    .truncated(true)
+                    .skip(1);
+            options.add(op);
+    	}
+        return options;
+    }
+
+    public static void tableOrdering(Connection connection, String path) throws SQLException {
+    	try {
+	    	List<CSVLoader.Options> options = options(path);
+	        for (Options op : options) {
+	        	load(connection, op);
+	        }
+    	} catch (IOException e) {
+    		throw new SQLException(e.getMessage(), e);
+    	}
     }
 
     public static class Options {

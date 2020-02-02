@@ -62,9 +62,13 @@ public class ServerExtension implements BeforeAllCallback, AfterAllCallback, Bef
             return;
         logging(server.logging());
         //启动H2数据库
-        H2Engine engine = H2Engine.getEngine(H2Engine.H2_DIR,
-                server.rdb(), server.db(),
-                server.before(), server.after());
+        H2Engine engine = new H2Engine.Builder()
+        		.port(server.rdb())
+        		.name(server.db())
+        		.clear(server.clear())
+        		.before(server.before())
+        		.after(server.after())
+        		.build();
         context.getStore(NAMESPACE).put(getStoreKey(context, StoreKeyType.RDB), engine);
         engine.start();
 
@@ -167,7 +171,6 @@ public class ServerExtension implements BeforeAllCallback, AfterAllCallback, Bef
 
         //停止2数据库
         H2Engine engine = context.getStore(NAMESPACE).remove(getStoreKey(context, StoreKeyType.RDB), H2Engine.class);
-        engine.clearDatabase(server.clear());
         engine.stop();
     }
 

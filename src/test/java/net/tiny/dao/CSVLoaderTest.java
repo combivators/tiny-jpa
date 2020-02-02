@@ -4,6 +4,7 @@ package net.tiny.dao;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.sql.Connection;
+import java.util.List;
 
 import javax.annotation.Resource;
 import javax.persistence.EntityManager;
@@ -37,6 +38,16 @@ public class CSVLoaderTest {
                 .skip(1);
         Connection conn = ds.getConnection();
         CSVLoader.load(conn, options);
+        conn.close();
+    }
+
+    @Test
+    public void testTableOrdering() throws Exception {
+    	List<CSVLoader.Options> options = CSVLoader.options("src/test/resources/data/imports");
+    	assertEquals(1, options.size());
+        Connection conn = ds.getConnection();
+    	CSVLoader.tableOrdering(conn, "src/test/resources/data/imports");
+        conn.commit();
         conn.close();
     }
 

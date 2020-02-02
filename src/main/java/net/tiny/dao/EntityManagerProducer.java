@@ -55,7 +55,7 @@ public class EntityManagerProducer implements Constants {
                     LOGGER.info(String.format("[JPA] EntityManagerFactory '%s' is created. Load properties from '%s'.", unitName, propertiesFilename));
                 } else {
                     // Lookup persistence.xml
-                    LOGGER.info(String.format("[JPA] EntityManagerFactory '%s' is created by 'persistence.xml'.", unitName));
+                    LOGGER.info(String.format("[JPA] EntityManagerFactory not found '%s'. Default '%s' is created by 'persistence.xml'.", propertiesFilename, unitName));
                 }
             } catch (Throwable t) {
                 LOGGER.log(Level.SEVERE, "Failed to setup persistence unit '"+unitName+"'.",  t);
@@ -70,8 +70,24 @@ public class EntityManagerProducer implements Constants {
         return createEntityManagerFactory(unitName, System.getProperty("profile")).createEntityManager();
     }
 
+    private Level level = Level.INFO;
+    private String unit = DEFAULT_UNIT;
+    private String profile = DEFAULT_PROFILE;
+
+    public EntityManagerFactory getEntityManagerFactory() {
+        return createEntityManagerFactory(unit, profile);
+    }
+
+    public void setEntityManagerFactory(EntityManagerFactory factory) {
+    	FACTORIES.put(unit, factory);
+    }
+
     public EntityManager create() {
-        return create(DEFAULT_UNIT);
+    	EntityManager em = getEntityManagerFactory().createEntityManager();
+    	EntityTransaction trx = em.getTransaction();
+        trx.begin();
+        LOGGER.log(level, String.format("[JPA] TX-%d begin", trx.hashCode()));
+    	return em;
     }
 
     public EntityManager getScopedEntityManager(boolean createable) {
@@ -110,18 +126,17 @@ public class EntityManagerProducer implements Constants {
                 // In case a transaction is still open.
                 if (transaction.isActive()) {
                     if(transaction.getRollbackOnly()) {
-                        LOGGER.fine(String.format("[JPA] tr-%d rollback", transaction.hashCode()));
+                        LOGGER.log(level, String.format("[JPA] TX-%d rollback", transaction.hashCode()));
                         transaction.rollback();
                     } else {
-                        LOGGER.fine(String.format("[JPA] tr-%d commit", transaction.hashCode()));
+                        LOGGER.log(level, String.format("[JPA] TX-%d commit", transaction.hashCode()));
                         transaction.commit();
                     }
                 }
             } finally {
-                LOGGER.fine("[JPA] Closing entity manager");
+                LOGGER.log(level, "[JPA] Closing entity manager");
                 entityManager.close();
             }
-
         }
     }
 

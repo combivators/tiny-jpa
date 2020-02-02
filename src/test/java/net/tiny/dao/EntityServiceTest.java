@@ -13,11 +13,14 @@ import net.tiny.unit.ws.Server;
 import net.tiny.config.JsonParser;
 import net.tiny.dao.test.entity.Log;
 
-@Server(web=8080,rdb=9001,trace=true
+@Server(web=8080,rdb=9092,trace=true
   ,config="src/test/resources/config/test-handlers.yml"
   ,persistence="persistence-eclipselink.properties"
   ,db="h2"
-  ,before= {"create sequence xx_log_sequence increment by 1 start with 0;"}
+  ,before= {
+	"create sequence xx_log_sequence increment by 1 start with 0;"
+	,"create sequence id_seq increment by 1 start with 0;"
+  }
 )
 public class EntityServiceTest {
 
@@ -45,7 +48,7 @@ public class EntityServiceTest {
         String req = JsonParser.marshal(log);
         res = client.doPost(new URL("http://localhost:" + port +"/v1/dao/log"), req.getBytes(), callback -> {
             if(callback.success()) {
-                assertEquals(client.getStatus(), HttpURLConnection.HTTP_OK);
+                assertEquals(client.getStatus(), HttpURLConnection.HTTP_CREATED);
                 assertEquals("application/json; charset=utf-8", client.getHeader("Content-Type"));
             } else {
                 fail(callback.cause().getMessage());
@@ -53,12 +56,12 @@ public class EntityServiceTest {
         });
         log = JsonParser.unmarshal(new String(res), Log.class);
         assertEquals(1L, log.getId());
-        Thread.sleep(100L);
+        Thread.sleep(1000L);
 
         // GET
         String json = client.doGet("http://localhost:" + port +"/v1/dao/log/" + log.getId());
         System.out.println(json);
-        assertTrue(json.contains("\"id\" : 1,"));
+        assertTrue(json.contains("\"id\":1,"));
 
         // PUT
         client.request()
@@ -78,6 +81,7 @@ public class EntityServiceTest {
 
         // DELETE
         json = client.doDelete("http://localhost:" + port +"/v1/dao/log/" + log.getId());
+        System.out.println(json);
 
         client.close();
     }

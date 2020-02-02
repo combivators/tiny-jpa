@@ -78,6 +78,7 @@ public class EntityService<T, ID extends Serializable> extends BaseWebService {
         case GET:
             id = JsonParser.unmarshal(request.getParameter(0), keyType);
             entity = baseDao.find(id);
+
             if (null != entity) {
                 final String response = JsonParser.marshal(entity);
                 final byte[] rawResponse = response.getBytes(StandardCharsets.UTF_8);
@@ -97,7 +98,7 @@ public class EntityService<T, ID extends Serializable> extends BaseWebService {
             final byte[] rawResponse = response.getBytes(StandardCharsets.UTF_8);
             final ResponseHeaderHelper header = HttpHandlerHelper.getHeaderHelper(he);
             header.setContentType(MIME_TYPE.JSON);
-            he.sendResponseHeaders(HttpURLConnection.HTTP_OK, rawResponse.length);
+            he.sendResponseHeaders(HttpURLConnection.HTTP_CREATED, rawResponse.length);
             he.getResponseBody().write(rawResponse);
             break;
         case PUT:
