@@ -14,7 +14,7 @@ import javax.persistence.PersistenceException;
 
 import net.tiny.ws.auth.Crypt;
 
-public class EntityManagerProducer implements Constants {
+public class EntityManagerProducer {
     private static Logger LOGGER = Logger.getLogger(EntityManagerProducer.class.getName());
 
     private static ConcurrentHashMap<String, EntityManagerFactory> FACTORIES = new ConcurrentHashMap<>();
@@ -26,7 +26,7 @@ public class EntityManagerProducer implements Constants {
         if(null != profile && !profile.isEmpty()) {
             propertiesFilename = propertiesFilename.concat("-").concat(profile);
         }
-        if (!DEFAULT_UNIT.equals(unitName)) {
+        if (!Constants.DEFAULT_UNIT.equals(unitName)) {
             propertiesFilename = propertiesFilename.concat("-").concat(unitName);
         }
         propertiesFilename = propertiesFilename.concat(".properties");
@@ -70,27 +70,40 @@ public class EntityManagerProducer implements Constants {
         return createEntityManagerFactory(unitName, System.getProperty("profile")).createEntityManager();
     }
 
-    private Level level = Level.INFO;
-    private String unit = DEFAULT_UNIT;
-    private String profile = DEFAULT_PROFILE;
+    private Level level = Level.FINE;
+    private String unit = Constants.DEFAULT_UNIT;
+    private String profile = Constants.DEFAULT_PROFILE;
 
+    public Level getLevel() {
+        return level;
+    }
+    public void setLevel(Level level) {
+        this.level = level;
+    }
+    public String getProfile() {
+        return profile;
+    }
+    public void setProfile(String profile) {
+        this.profile = profile;
+    }
     public EntityManagerFactory getEntityManagerFactory() {
         return createEntityManagerFactory(unit, profile);
     }
 
     public void setEntityManagerFactory(EntityManagerFactory factory) {
-    	FACTORIES.put(unit, factory);
+        FACTORIES.put(unit, factory);
     }
 
     public EntityManager create() {
-    	EntityManager em = getEntityManagerFactory().createEntityManager();
-    	EntityTransaction trx = em.getTransaction();
+        EntityManager em = getEntityManagerFactory().createEntityManager();
+        EntityTransaction trx = em.getTransaction();
         trx.begin();
-        LOGGER.log(level, String.format("[JPA] TX-%d begin", trx.hashCode()));
-    	return em;
+        if (LOGGER.isLoggable(level))
+            LOGGER.log(level, String.format("[JPA] TX-%d begin", trx.hashCode()));
+        return em;
     }
 
-    public EntityManager getScopedEntityManager(boolean createable) {
+    public EntityManager getScoped(boolean createable) {
         EntityManager em = localContext.get();
         boolean local = (em != null);
         if(createable) {
@@ -120,21 +133,25 @@ public class EntityManagerProducer implements Constants {
         if (entityManager == null) {
             return;
         }
+
         if (entityManager.isOpen()) {
             try {
                 EntityTransaction transaction = entityManager.getTransaction();
                 // In case a transaction is still open.
                 if (transaction.isActive()) {
                     if(transaction.getRollbackOnly()) {
-                        LOGGER.log(level, String.format("[JPA] TX-%d rollback", transaction.hashCode()));
+                        if (LOGGER.isLoggable(level))
+                            LOGGER.log(level, String.format("[JPA] TX-%d rollback", transaction.hashCode()));
                         transaction.rollback();
                     } else {
-                        LOGGER.log(level, String.format("[JPA] TX-%d commit", transaction.hashCode()));
+                        if (LOGGER.isLoggable(level))
+                            LOGGER.log(level, String.format("[JPA] TX-%d commit", transaction.hashCode()));
                         transaction.commit();
                     }
                 }
             } finally {
-                LOGGER.log(level, "[JPA] Closing entity manager");
+                if (LOGGER.isLoggable(level))
+                    LOGGER.log(level, "[JPA] Closing entity manager");
                 entityManager.close();
             }
         }

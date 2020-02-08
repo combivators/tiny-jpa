@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.net.HttpURLConnection;
 import java.nio.charset.StandardCharsets;
+import java.util.Optional;
 
 import javax.persistence.EntityManager;
 
@@ -73,14 +74,13 @@ public class EntityService<T, ID extends Serializable> extends BaseWebService {
         final Class<T> entityType = baseDao.getEntityType();
         final Class<ID> keyType = baseDao.getKeyType();
         ID id;
-        T entity = null;
+
         switch (method) {
         case GET:
             id = JsonParser.unmarshal(request.getParameter(0), keyType);
-            entity = baseDao.find(id);
-
-            if (null != entity) {
-                final String response = JsonParser.marshal(entity);
+            Optional<T> entity = baseDao.find(id);
+            if (entity.isPresent()) {
+                final String response = JsonParser.marshal(entity.get());
                 final byte[] rawResponse = response.getBytes(StandardCharsets.UTF_8);
                 final ResponseHeaderHelper header = HttpHandlerHelper.getHeaderHelper(he);
                 header.setContentType(MIME_TYPE.JSON);
@@ -91,10 +91,10 @@ public class EntityService<T, ID extends Serializable> extends BaseWebService {
             }
             break;
         case POST:
-            entity = (T)JsonParser.unmarshal(new String(request.getRequestContent()), entityType);
-            baseDao.insert(entity);
+            T obj = (T)JsonParser.unmarshal(new String(request.getRequestContent()), entityType);
+            baseDao.insert(obj);
             baseDao.flush();
-            final String response = JsonParser.marshal(entity);
+            final String response = JsonParser.marshal(obj);
             final byte[] rawResponse = response.getBytes(StandardCharsets.UTF_8);
             final ResponseHeaderHelper header = HttpHandlerHelper.getHeaderHelper(he);
             header.setContentType(MIME_TYPE.JSON);
@@ -103,8 +103,8 @@ public class EntityService<T, ID extends Serializable> extends BaseWebService {
             break;
         case PUT:
             id = JsonParser.unmarshal(request.getParameter(0), keyType);
-            entity = (T)JsonParser.unmarshal(new String(request.getRequestContent()), entityType);
-            baseDao.update(entity);
+            T t = (T)JsonParser.unmarshal(new String(request.getRequestContent()), entityType);
+            baseDao.update(t);
             baseDao.flush();
             he.sendResponseHeaders(HttpURLConnection.HTTP_OK, NO_RESPONSE_LENGTH);
             break;

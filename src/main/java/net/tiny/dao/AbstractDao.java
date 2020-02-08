@@ -8,6 +8,7 @@ import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Optional;
 
 //import javax.inject.Inject;
 import javax.persistence.EmbeddedId;
@@ -265,23 +266,24 @@ public  abstract class AbstractDao<T, ID extends Serializable> implements IDao<T
     }
 
     @Override
-    public T find(ID id) {
-        if (id != null) {
-            return getEntityManager().find(entityClass, id);
-        }
-        return null;
+    public Optional<T> find(ID id) {
+        return find(id, null);
     }
 
     @Override
-    public T find(ID id, LockModeType lockModeType) {
+    public Optional<T> find(ID id, LockModeType lockModeType) {
+        T t = null;
         if (id != null) {
             if (lockModeType != null) {
-                return getEntityManager().find(entityClass, id, lockModeType);
+                t = getEntityManager().find(entityClass, id, lockModeType);
             } else {
-                return getEntityManager().find(entityClass, id);
+                t = getEntityManager().find(entityClass, id);
             }
         }
-        return null;
+        if (t != null) {
+            return Optional.of(t);
+        }
+        return Optional.empty();
     }
 
     protected <E> TypedQuery<E> getNamedQuery(String name, Class<E> classType) {

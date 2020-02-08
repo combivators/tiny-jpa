@@ -6,6 +6,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import javax.persistence.EntityManager;
 import javax.persistence.LockModeType;
@@ -192,7 +193,7 @@ public interface IDao<T, ID extends Serializable> extends Constants {
      *            锁定方式
      * @return 实体对象，若不存在则返回null
      */
-    T find(ID id, LockModeType lockModeType);
+    Optional<T> find(ID id, LockModeType lockModeType);
 
     /**
      * 查找实体对象
@@ -201,7 +202,7 @@ public interface IDao<T, ID extends Serializable> extends Constants {
      *            ID
      * @return 实体对象，若不存在则返回null
      */
-    T find(ID id);
+    Optional<T> find(ID id);
 
     /**
      * 查找实体对象
@@ -212,7 +213,7 @@ public interface IDao<T, ID extends Serializable> extends Constants {
      *            查询条件
      * @return 实体对象，若不存在则返回null
      */
-    T find(String name, final Map<String, Object> where);
+    Optional<T> find(String name, final Map<String, Object> where);
 
     /**
      * 查找实体对象
@@ -223,7 +224,7 @@ public interface IDao<T, ID extends Serializable> extends Constants {
      *            查询条件
      * @return 实体对象，若不存在则返回null
      */
-    T find(String name, final Object[] args);
+    Optional<T> find(String name, final Object[] args);
 
     /**
      * 查找实体对象集合
@@ -381,7 +382,7 @@ public interface IDao<T, ID extends Serializable> extends Constants {
     Iterator<T> findNamed(String name, final Map<String, Object> where, int offset, int max);
 
     int updateNamed(String name, final Map<String, Object> args);
-    T updateNamed(String name, ID id);
+    Optional<T> updateNamed(String name, ID id);
 
     Connection getJdbcConnection();
     boolean executeNativeSQL(String sql);

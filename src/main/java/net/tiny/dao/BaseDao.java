@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import javax.persistence.EntityManager;
 import javax.persistence.FlushModeType;
@@ -128,15 +129,15 @@ public abstract class BaseDao<T, ID extends Serializable> extends AbstractDao<T,
     }
 
     @Override
-    public T find(String name, final Map<String, Object> where) {
+    public Optional<T> find(String name, final Map<String, Object> where) {
         TypedQuery<T> query = getNamedQuery(name, where);
-        return query.getSingleResult();
+        return Optional.of(query.getSingleResult());
     }
 
     @Override
-    public T find(String name, final Object[] args) {
+    public Optional<T> find(String name, final Object[] args) {
         TypedQuery<T> query = getNamedQuery(name, args);
-        return query.getSingleResult();
+        return Optional.of(query.getSingleResult());
     }
 
     @Override
@@ -313,7 +314,7 @@ public abstract class BaseDao<T, ID extends Serializable> extends AbstractDao<T,
     }
 
     // Other common operations
-    protected TypedQuery<T> getNamedQuery(String name) {
+    public TypedQuery<T> getNamedQuery(String name) {
         return getNamedQuery(name, entityClass);
     }
 
@@ -379,13 +380,13 @@ public abstract class BaseDao<T, ID extends Serializable> extends AbstractDao<T,
     }
 
     @Override
-    public T updateNamed(String name, ID id) {
+    public Optional<T> updateNamed(String name, ID id) {
         Map<String, Object> args = new HashMap<String, Object>();
         args.put(getIDName(),  id);
         if(1 == updateNamed(name, args)) {
             return find(id);
         } else {
-            return null;
+            return Optional.empty();
         }
     }
 
