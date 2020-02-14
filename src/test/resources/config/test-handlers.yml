@@ -5,4 +5,4 @@ handler:
   log:
     class:   net.tiny.dao.EntityService
     path:    /v1/dao/log
-    dao:     net.tiny.dao.test.LogDao
+    entity:  net.tiny.dao.test.entity.Log

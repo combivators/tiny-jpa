@@ -1,0 +1,48 @@
+jpa:
+  producer:
+    class: net.tiny.dao.EntityManagerProducer
+    properties: ${jpa.properties}
+#    profile: local
+#    level: INFO
+# JPA2 Properties
+  properties:
+    javax:
+      persistence:
+#        sharedCache:
+#          mode: ENABLE_SELECTIVE
+#        transactionType: JTA
+         validation:
+           mode: auto
+         lock:
+           timeout: 1000
+         query:
+           timeout: 1000
+         schema-generation:
+           database:
+             action: create
+           create-source: metadata
+         jdbc:
+           driver:   org.h2.Driver
+           url:      jdbc:h2:mem:test;MODE=MYSQL;DB_CLOSE_DELAY=-1
+#           url:      jdbc:h2:tcp://127.0.0.1:9092/h2
+           user:     sa
+           password:
+           show_sql: true
+         provider: org.eclipse.persistence.jpa.PersistenceProvider
+#Supported platforms : JavaDB Derby Oracle MySQL4 PostgreSQL SQLServer DB2 DB2Mainframe Sybase H2 HSQL
+#Others available : Informix TimesTen Attunity SQLAnyWhere DBase Cloudscape PointBase
+  eclipselink:
+    target-database: HSQL
+    logging:
+#      level: INFO
+      level:
+        sql: FINE
+      parameters: true
+    jdbc:
+      connection_pool:
+        default:
+          initial: 2
+          min:     2
+          max:     5
+    weaving:
+      changetracking: false

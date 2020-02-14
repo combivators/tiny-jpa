@@ -30,19 +30,19 @@ import net.tiny.ws.ResponseHeaderHelper;
  */
 public class EntityService<T, ID extends Serializable> extends BaseWebService {
 
-    private String dao;
-    private Class<?> daoType;
+    private String entity;
+    private Class<ID> keyType;
+    private Class<T> entityType;
 
-    public void setDao(String dao) {
+    @SuppressWarnings("unchecked")
+    public void setEntity(String type) {
+        entity = type;
         try {
-            daoType = Class.forName(dao);
-            if (!BaseDao.class.isAssignableFrom(daoType)) {
-                throw new RuntimeException(String.format("'%s' is invaild dao class.", dao));
-            }
+            entityType = (Class<T>)Class.forName(entity);
+            keyType = (Class<ID>)Long.class;
         } catch (ClassNotFoundException e) {
-            throw new RuntimeException(String.format("Not fount '%s' class.", dao));
+            throw new RuntimeException(String.format("Not fount '%s' entity class.", entity));
         }
-        this.dao = dao;
     }
 
     @Override
@@ -70,7 +70,7 @@ public class EntityService<T, ID extends Serializable> extends BaseWebService {
             return;
         }
 
-        final BaseDao<T, ID> baseDao = createDao(he);
+        final IDao<T, ID> baseDao = createDao(he);
         final Class<T> entityType = baseDao.getEntityType();
         final Class<ID> keyType = baseDao.getKeyType();
         ID id;
@@ -123,24 +123,15 @@ public class EntityService<T, ID extends Serializable> extends BaseWebService {
         }
     }
 
-    private EntityManager getEntityManager(HttpExchange he) {
+    private IDao<T, ID> createDao(HttpExchange he) {
         final Object em = he.getAttribute(EntityManager.class.getName());
-        if (null == em || !(em instanceof EntityManager) || dao == null || daoType == null) {
+        if (null == em || !(em instanceof EntityManager)) {
             throw new RuntimeException("Not setting a JPA http transaction filter.");
         }
-        return (EntityManager)em;
-    }
-
-    @SuppressWarnings("unchecked")
-    private BaseDao<T, ID> createDao(HttpExchange he) {
-        try {
-            final EntityManager em = getEntityManager(he);
-            final BaseDao<T, ID> baseDao = (BaseDao<T, ID>)daoType.newInstance();
-            baseDao.setEntityManager(em);
-            return baseDao;
-        } catch (InstantiationException | IllegalAccessException e) {
-            throw new RuntimeException(String.format("Create '%s' instance error.", dao), e);
+        if (keyType == null || entityType == null) {
+            throw new RuntimeException("Not setting handler entity properties.");
         }
+        return Dao.getDao((EntityManager)em, keyType, entityType);
     }
 
 }

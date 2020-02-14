@@ -3,10 +3,13 @@ package net.tiny.dao;
 import java.io.Serializable;
 import java.util.Optional;
 
+import javax.annotation.Resource;
+
 import net.tiny.service.ServiceContext;
 
 public class AbstractService<T, ID extends Serializable> {
 
+    @Resource
     protected final ServiceContext context;
     protected final IDao<T, ID> dao;
 

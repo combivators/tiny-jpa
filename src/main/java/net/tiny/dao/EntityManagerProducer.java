@@ -66,13 +66,33 @@ public class EntityManagerProducer {
         return factory;
     }
 
-    public static EntityManager create(final String unitName) {
-        return createEntityManagerFactory(unitName, System.getProperty("profile")).createEntityManager();
+    public static EntityManagerFactory createEntityManagerFactory(final String unitName, final Properties properties) {
+        EntityManagerFactory factory = FACTORIES.get(unitName);
+        if (null == factory) {
+            try {
+                factory = Persistence.createEntityManagerFactory(unitName);
+                String  jdbcPassword = properties.getProperty("javax.persistence.jdbc.password");
+                if (null != jdbcPassword && !jdbcPassword.isEmpty()) {
+                    jdbcPassword = Crypt.decryptPassword(jdbcPassword);
+                } else {
+                    jdbcPassword = "";
+                }
+                properties.setProperty("javax.persistence.jdbc.password", jdbcPassword);
+                factory = Persistence.createEntityManagerFactory(unitName, properties);
+                LOGGER.info(String.format("[JPA] EntityManagerFactory '%s' is created. Load properties from config file.", unitName));
+            } catch (Throwable t) {
+                LOGGER.log(Level.SEVERE, "Failed to setup persistence unit '"+unitName+"'.",  t);
+                throw new PersistenceException(t.getMessage(), t);
+            }
+            FACTORIES.put(unitName, factory);
+        }
+        return factory;
     }
 
     private Level level = Level.FINE;
     private String unit = Constants.DEFAULT_UNIT;
     private String profile = Constants.DEFAULT_PROFILE;
+    private Properties properties = null;
 
     public Level getLevel() {
         return level;
@@ -86,8 +106,19 @@ public class EntityManagerProducer {
     public void setProfile(String profile) {
         this.profile = profile;
     }
+    public Properties getProperties() {
+        return properties;
+    }
+    public void setProperties(Properties properties) {
+        this.properties = properties;
+    }
+
     public EntityManagerFactory getEntityManagerFactory() {
-        return createEntityManagerFactory(unit, profile);
+        if (null != properties) {
+            return createEntityManagerFactory(unit, properties);
+        } else {
+            return createEntityManagerFactory(unit, profile);
+        }
     }
 
     public void setEntityManagerFactory(EntityManagerFactory factory) {

@@ -30,6 +30,7 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
 
 import com.sun.net.httpserver.Filter;
+import com.sun.net.httpserver.HttpHandler;
 
 import net.tiny.config.Config;
 import net.tiny.config.Configuration;
@@ -63,12 +64,12 @@ public class ServerExtension implements BeforeAllCallback, AfterAllCallback, Bef
         logging(server.logging());
         //启动H2数据库
         H2Engine engine = new H2Engine.Builder()
-        		.port(server.rdb())
-        		.name(server.db())
-        		.clear(server.clear())
-        		.before(server.before())
-        		.after(server.after())
-        		.build();
+                .port(server.rdb())
+                .name(server.db())
+                .clear(server.clear())
+                .before(server.before())
+                .after(server.after())
+                .build();
         context.getStore(NAMESPACE).put(getStoreKey(context, StoreKeyType.RDB), engine);
         engine.start();
 
@@ -224,7 +225,7 @@ public class ServerExtension implements BeforeAllCallback, AfterAllCallback, Bef
      * @param server
      * @return
      */
-    static List<WebServiceHandler> handlers(Server server, EntityManagerFactory factory) {
+    static List<HttpHandler> handlers(Server server, EntityManagerFactory factory) {
         final List<Filter> filters = new ArrayList<>();
         filters.add(new AccessLogger());
 
@@ -237,10 +238,15 @@ public class ServerExtension implements BeforeAllCallback, AfterAllCallback, Bef
         handler.parse();
         final Configuration config = handler.getConfiguration();
         final HandlerConfig hc = config.getAs(HandlerConfig.class);
-        final List<WebServiceHandler> handlers = new ArrayList<>();
+        final List<HttpHandler> handlers = new ArrayList<>();
         for (Object h : hc.handlers) {
             if (h instanceof WebServiceHandler) {
                 handlers.add(((WebServiceHandler)h).filters(filters));
+            } else if (h instanceof HttpHandler) {
+                handlers.add((HttpHandler)h);
+                try {
+                    Reflections.setFieldValue(h, "filters", filters);
+                } catch (RuntimeException e) {}
             }
         }
         return handlers;
