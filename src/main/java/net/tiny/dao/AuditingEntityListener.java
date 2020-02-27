@@ -12,6 +12,6 @@ public class AuditingEntityListener implements Constants {
     @PrePersist
     public void prePresist(Object o) {
         //TODO
-        LOGGER.info("[JPA] AuditingEntityListener PrePersist");
+        //LOGGER.info("[JPA] AuditingEntityListener PrePersist " + o.getClass().getSimpleName());
     }
 }

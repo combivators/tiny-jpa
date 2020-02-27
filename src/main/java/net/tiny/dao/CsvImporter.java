@@ -16,19 +16,28 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Logger;
 
 import javax.validation.ConstraintViolation;
 
 import net.tiny.dao.reference.Column;
 import net.tiny.dao.reference.SchemaParser;
 
-public class CSVLoader {
+public class CsvImporter {
 
-	private static String TABLE_ORDERING_FILE = "table-ordering.txt";
+    private static Logger LOGGER = Logger.getLogger(CsvImporter.class.getName());
+
+    private static String TABLE_ORDERING_FILE = "table-ordering.txt";
+
+    static final String LOAD_DATA_FORMAT = "LOAD DATA LOCAL INFILE '%s' INTO TABLE %s FIELDS TERMINATED BY '%s'"
+                                         + " OPTIONALLY ENCLOSED BY '%s'"
+                                         + " ESCAPED BY '\\\\' "
+                                         + " LINES TERMINATED BY '\r\n'"
+                                         + " (%s) IGNORE %d LINES";
 
     private final Builder builder;
 
-    private CSVLoader(Builder builder) {
+    private CsvImporter(Builder builder) {
         this.builder = builder;
     }
 
@@ -46,15 +55,13 @@ public class CSVLoader {
     /**
      * Parse CSV file and load in given database table.
      *
-     * @param manager JPA EntityManager
-     * @param type  Class type of target entity
+     * @param dao JPA Data access object
      * @param options Input source option of CSV or TSV file
      * @throws SQLException
      */
-    static void load(IDao<?,?> dao, Options options) throws SQLException {
+    public static void load(IDao<?,?> dao, Options options) throws SQLException {
         EntityReader<?> reader = null;
         try {
-            //EntityManager manager = dao.getEntityManager();
             Class<?> type = dao.getEntityType();
             reader = new EntityReader<>(type, options);
 
@@ -85,6 +92,9 @@ public class CSVLoader {
                 sql = generateLoadDataSql(options, columns, false);
             }
             dao.executeNativeSQL(sql);
+            if (options.verbose) {
+                LOGGER.info(String.format("[CSV] import sql '%s'", sql));
+            }
             dao.commitAndContinue();
         } catch (IOException e) {
             throw new SQLException("Error occured while executing file. Cause: " + e.getMessage(), e);
@@ -98,12 +108,6 @@ public class CSVLoader {
     }
 
 
-    static final String LOAD_DATA = "LOAD DATA LOCAL INFILE '%s' INTO TABLE %s FIELDS TERMINATED BY '%s'"
-                                  + " OPTIONALLY ENCLOSED BY '%s'"
-                                  + " ESCAPED BY '\\\\' "
-                                  + " LINES TERMINATED BY '\r\n'"
-                                  + " (%s) IGNORE %d LINES";
-
     private static String generateLoadDataSql(Options options, String[] columns, boolean h2) {
         String fields = String.join(",", columns);
         if (h2) {
@@ -112,7 +116,7 @@ public class CSVLoader {
                     options.table, fields, options.path.toFile().getAbsolutePath(), options.delimiter);
         } else {
             // Call General 'LOAD DATA ...'
-            return String.format(LOAD_DATA,
+            return String.format(LOAD_DATA_FORMAT,
                     options.path.toFile().getAbsolutePath(),
                     options.table, options.delimiter, options.quotation, fields, options.skip);
         }
@@ -156,12 +160,19 @@ public class CSVLoader {
             if(options.truncated) {
                 // Delete data from table before loading csv
                 stmt = connection.createStatement();
-                stmt.execute("DELETE FROM " + options.table);
+                String del = "DELETE FROM " + options.table;
+                stmt.execute(del);
                 stmt.close();
+                //TODO Rest sequence
+                if (options.verbose) {
+                    LOGGER.info(String.format("[CSV] import options.truncated '%s' : '%s'", options.truncated, del));
+                }
             }
             stmt = connection.createStatement();
             stmt.execute(sql);
-
+            if (options.verbose) {
+                LOGGER.info(String.format("[CSV] import sql '%s'", sql));
+            }
             connection.commit();
         } catch (SQLException e) {
             connection.rollback();
@@ -204,31 +215,38 @@ public class CSVLoader {
         loadGeneral(connection, options, sql);
     }
 
-    static List<CSVLoader.Options> options(String path) throws IOException {
-    	List<CSVLoader.Options> options = new ArrayList<>();
-    	Path table = Paths.get(path, TABLE_ORDERING_FILE);
-    	if (!Files.exists(table)) {
-    		throw new IllegalArgumentException(String.format("Not found '%s' file in '%s'.", TABLE_ORDERING_FILE, path));
-    	}
-    	List<String> lines = Files.readAllLines(table);
-    	for (String tab : lines) {
-            CSVLoader.Options op = new CSVLoader.Options(String.format("%s/%s.csv", path, tab), tab)
+    static List<Options> options(String path) throws IOException {
+        List<Options> options = new ArrayList<>();
+        Path table = Paths.get(path, TABLE_ORDERING_FILE);
+        if (!Files.exists(table)) {
+            throw new IllegalArgumentException(String.format("Not found '%s' file in '%s'.", TABLE_ORDERING_FILE, path));
+        }
+        List<String> lines = Files.readAllLines(table);
+        for (String tab : lines) {
+            Options op = new Options(String.format("%s/%s.csv", path, tab), tab)
                     .truncated(true)
                     .skip(1);
             options.add(op);
-    	}
+        }
         return options;
     }
 
-    public static void tableOrdering(Connection connection, String path) throws SQLException {
-    	try {
-	    	List<CSVLoader.Options> options = options(path);
-	        for (Options op : options) {
-	        	load(connection, op);
-	        }
-    	} catch (IOException e) {
-    		throw new SQLException(e.getMessage(), e);
-    	}
+    /**
+     * Load all CSV data form file 'table-ordering.txt' to database
+     *
+     * @param connection JDBC Connection
+     * @param path The path of table ordering file.
+     * @throws SQLException
+     */
+    public static void load(Connection connection, String path) throws SQLException {
+        try {
+            List<Options> options = options(path);
+            for (Options op : options) {
+                load(connection, op);
+            }
+        } catch (IOException e) {
+            throw new SQLException(e.getMessage(), e);
+        }
     }
 
     public static class Options {
@@ -241,6 +259,7 @@ public class CSVLoader {
         //int batchSize = Constants.DEFAULT_BATCH_SIZE;
         int skip = 0;
         boolean truncated = false;
+        boolean verbose = false;
 
         public Options() {}
         public Options(String p, String t) {
@@ -270,6 +289,11 @@ public class CSVLoader {
 
         public Options truncated(boolean enable) {
             truncated = enable;
+            return this;
+        }
+
+        public Options verbose(boolean enable) {
+            verbose = enable;
             return this;
         }
 
@@ -333,11 +357,16 @@ public class CSVLoader {
             return this;
         }
 
-        public CSVLoader build() {
+        public Builder verbose(boolean enable) {
+            options.verbose(enable);
+            return this;
+        }
+
+        public CsvImporter build() {
             if (options.path == null || options.table == null) {
                 throw new IllegalArgumentException("Path or Table name not set.");
             }
-            return new CSVLoader(this);
+            return new CsvImporter(this);
         }
     }
 

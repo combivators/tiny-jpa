@@ -15,6 +15,8 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import javax.persistence.EntityManager;
+import javax.persistence.metamodel.EntityType;
+import javax.persistence.metamodel.Metamodel;
 
 import net.tiny.dao.reference.Column;
 import net.tiny.dao.reference.Schema;
@@ -43,7 +45,9 @@ public class DaoHelper {
     }
 
     public static void load(Connection conn, String path) throws SQLException {
-        CSVLoader.tableOrdering(conn, path);
+        long st = System.currentTimeMillis();
+        CsvImporter.load(conn, path);
+        LOGGER.info(String.format("[JDBC] load csv from '%s' - %dms", path, (System.currentTimeMillis() - st)));
         resetSequence(conn);
     }
 
@@ -142,6 +146,20 @@ public class DaoHelper {
         }
         close(res);
         return num;
+    }
+
+    /**
+     * Returns the table name for a given entity type in the {@link EntityManager}.
+     * @param em
+     * @param entityClass
+     * @return
+     */
+    public static <T> String getTableName(EntityManager em, Class<T> entityClass) {
+        final Metamodel meta = em.getMetamodel();
+        final EntityType<T> entityType = meta.entity(entityClass);
+        //Check whether @Table annotation is present on the class.
+        final javax.persistence.Table t = entityClass.getAnnotation(javax.persistence.Table.class);
+        return (t == null) ? entityType.getName().toUpperCase() : t.name();
     }
 
     static List<String> tableNames(Connection conn) throws SQLException {

@@ -7,6 +7,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import javax.persistence.EntityManager;
 import javax.persistence.LockModeType;
@@ -242,6 +243,19 @@ public interface IDao<T, ID extends Serializable> extends Constants {
     List<T> findList(Integer first, Integer count, List<Filter> filters, List<Order> orders);
 
     /**
+     * 查找实体对象集合
+     *
+     * @param ids
+     *            ID集合
+     * @param filters
+     *            筛选
+     * @param orders
+     *            排序
+     * @return 实体对象集合
+     */
+    List<T> findList(Collection<ID> ids, List<Filter> filters, List<Order> orders);
+
+    /**
      * 查找实体对象分页
      *
      * @param pageable
@@ -369,6 +383,7 @@ public interface IDao<T, ID extends Serializable> extends Constants {
     Iterator<T> find(final Map<String, Object> where, final Map<String, Object> order);
     Iterator<T> find(final Map<String, Object> where, final Map<String, Object> order, int offset, int max);
 
+    Stream<T> finds();
     List<T> selectAll() ;
     List<T> select(final Map<String, Object> whereParams, final Map<String, Object> orderParams);
     List<T> select(final Map<String, Object> whereParams, final Map<String, Object> orderParams, int offset, int max);
@@ -386,4 +401,6 @@ public interface IDao<T, ID extends Serializable> extends Constants {
 
     Connection getJdbcConnection();
     boolean executeNativeSQL(String sql);
+
+    String getTableName();
 }

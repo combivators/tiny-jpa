@@ -22,7 +22,7 @@ import net.tiny.unit.db.Database;
         ,"create sequence id_seq increment by 1 start with 0 NOCYCLE;"
  }
 )
-public class CSVLoaderTest {
+public class CsvImporterTest {
 
     @PersistenceContext(unitName = "persistenceUnit")
     protected EntityManager entityManager;
@@ -33,20 +33,21 @@ public class CSVLoaderTest {
     @Test
     public void testLoadCSV() throws Exception {
         assertNotNull(ds);
-        CSVLoader.Options options = new CSVLoader.Options("src/test/resources/data/imports/XX_LOG.csv", "xx_log")
+        CsvImporter.Options options = new CsvImporter.Options("src/test/resources/data/imports/XX_LOG.csv", "xx_log")
+                .verbose(true)
                 .truncated(true)
                 .skip(1);
         Connection conn = ds.getConnection();
-        CSVLoader.load(conn, options);
+        CsvImporter.load(conn, options);
         conn.close();
     }
 
     @Test
     public void testTableOrdering() throws Exception {
-    	List<CSVLoader.Options> options = CSVLoader.options("src/test/resources/data/imports");
-    	assertEquals(1, options.size());
+        List<CsvImporter.Options> options = CsvImporter.options("src/test/resources/data/imports");
+        assertEquals(1, options.size());
         Connection conn = ds.getConnection();
-    	CSVLoader.tableOrdering(conn, "src/test/resources/data/imports");
+        CsvImporter.load(conn, "src/test/resources/data/imports");
         conn.commit();
         conn.close();
     }
@@ -58,9 +59,10 @@ public class CSVLoaderTest {
 
         LogDao dao = new LogDao();
         dao.setEntityManager(entityManager);
-        CSVLoader loader = new CSVLoader.Builder(dao)
+        CsvImporter loader = new CsvImporter.Builder(dao)
                 .path("src/test/resources/data/imports/XX_LOG.csv")
                 .table("xx_log")
+                .verbose(true)
                 .truncated(true)
                 .skip(1)
                 .build();

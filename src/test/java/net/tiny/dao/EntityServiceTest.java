@@ -14,12 +14,12 @@ import net.tiny.config.JsonParser;
 import net.tiny.dao.test.entity.Log;
 
 @Server(web=8080,rdb=9092,trace=true
-  ,config="src/test/resources/config/test-handlers.yml"
+  ,config="src/test/resources/config/entity-handlers.yml"
   ,persistence="persistence-eclipselink.properties"
   ,db="h2"
   ,before= {
-	"create sequence xx_log_sequence increment by 1 start with 0;"
-	,"create sequence id_seq increment by 1 start with 0;"
+    "create sequence xx_log_sequence increment by 1 start with 0;"
+    ,"create sequence id_seq increment by 1 start with 0;"
   }
 )
 public class EntityServiceTest {
@@ -29,7 +29,7 @@ public class EntityServiceTest {
         int port = 8080;
         SimpleClient client = new SimpleClient.Builder().build();
 
-        byte[] res = client.doGet(new URL("http://localhost:" + port +"/v1/dao/log/99"), callback -> {
+        byte[] res = client.doGet(new URL("http://localhost:" + port +"/dao/v1/xx_log/99"), callback -> {
             if(callback.success()) {
                 fail("Ee? How did find it!");
             } else {
@@ -46,7 +46,7 @@ public class EntityServiceTest {
         log.setParameter("phone=88888888");
         log.setIp("192.168.80.180");
         String req = JsonParser.marshal(log);
-        res = client.doPost(new URL("http://localhost:" + port +"/v1/dao/log"), req.getBytes(), callback -> {
+        res = client.doPost(new URL("http://localhost:" + port +"/dao/v1/xx_log"), req.getBytes(), callback -> {
             if(callback.success()) {
                 assertEquals(client.getStatus(), HttpURLConnection.HTTP_CREATED);
                 assertEquals("application/json; charset=utf-8", client.getHeader("Content-Type"));
@@ -59,14 +59,24 @@ public class EntityServiceTest {
         Thread.sleep(1000L);
 
         // GET
-        String json = client.doGet("http://localhost:" + port +"/v1/dao/log/" + log.getId());
+        String json = client.doGet("http://localhost:" + port +"/dao/v1/xx_log/" + log.getId());
         System.out.println(json);
         assertTrue(json.contains("\"id\":1,"));
+
+        // GET List
+        json = client.doGet("http://localhost:" + port +"/dao/v1/xx_log/list?size=5");
+        System.out.println(json);
+        assertTrue(json.contains("\"id\":1,"));
+
+        // GET List
+        json = client.doGet("http://localhost:" + port +"/dao/v1/xx_log/count");
+        System.out.println(json);
+        assertTrue(json.contains("\"count\":"));
 
         // PUT
         client.request()
             .port(port)
-            .path("/v1/dao/log/" + log.getId())
+            .path("/dao/v1/xx_log/" + log.getId())
             .type(SimpleClient.MIME_TYPE_JSON)
             .accept("application/json")
             .doPut("{\"id\": 1, \"operation\":\"用户设置\",\"operator\":\"user\",\"parameter\":\"phone=12345678\",\"ip\":\"192.168.100.123\"}".getBytes(),
@@ -80,7 +90,7 @@ public class EntityServiceTest {
           });
 
         // DELETE
-        json = client.doDelete("http://localhost:" + port +"/v1/dao/log/" + log.getId());
+        json = client.doDelete("http://localhost:" + port +"/dao/v1/xx_log/" + log.getId());
         System.out.println(json);
 
         client.close();

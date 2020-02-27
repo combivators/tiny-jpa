@@ -9,9 +9,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import javax.persistence.EntityManager;
 import javax.persistence.FlushModeType;
+import javax.persistence.Table;
 import javax.persistence.TypedQuery;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
@@ -22,6 +24,8 @@ import javax.persistence.criteria.Join;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 import javax.persistence.criteria.Selection;
+import javax.persistence.metamodel.EntityType;
+import javax.persistence.metamodel.Metamodel;
 
 import net.tiny.dao.entity.OrderEntity;
 
@@ -181,6 +185,14 @@ public abstract class BaseDao<T, ID extends Serializable> extends AbstractDao<T,
     @Override
     public Iterator<T> find(final Map<String, Object> whereParams, final Map<String, Object> orderParams, int offset, int max) {
         return select(whereParams, orderParams, offset, max).iterator();
+    }
+
+    @Override
+    public Stream<T> finds() {
+        final EntityManager em = getEntityManager();
+        final CriteriaQuery<T> query = em.getCriteriaBuilder().createQuery(entityClass);
+        query.from(entityClass);
+        return em.createQuery(query).getResultStream();
     }
 
     @Override
@@ -390,6 +402,14 @@ public abstract class BaseDao<T, ID extends Serializable> extends AbstractDao<T,
         }
     }
 
+    @Override
+    public String getTableName() {
+        final Metamodel meta = getEntityManager().getMetamodel();
+        final EntityType<T> entityType = meta.entity(entityClass);
+        //Check whether @Table annotation is present on the class.
+        final Table t = entityClass.getAnnotation(Table.class);
+        return (t == null) ? entityType.getName().toUpperCase() : t.name();
+    }
 
 
     protected List<T> findList(CriteriaQuery<T> criteriaQuery, Integer first, Integer count, List<Filter> filters, List<Order> orders) {

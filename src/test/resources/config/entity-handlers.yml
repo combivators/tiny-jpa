@@ -1,0 +1,11 @@
+config:
+  handlers:
+    - ${handler.dao}
+#
+handler:
+  dao:
+    class:    net.tiny.dao.EntityService
+    path:     /dao/v1
+    pattern:  .*/classes/, .*/test-classes/, .*/tiny-.*[.]jar
+    entities: net.tiny.dao.*
+    level:    INFO

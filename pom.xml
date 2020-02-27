@@ -21,7 +21,8 @@
     <jdk.version>1.8</jdk.version>
     <annotations.version>1.1</annotations.version>
     <validation.version>2.0.1.Final</validation.version>
-    <hibernate.version>6.1.0.Final</hibernate.version> <!-- 6.1.0.Alpha3 -->
+    <hibernate.version>6.1.0.Final</hibernate.version>
+    <hibernate-core.version>5.4.9.Final</hibernate-core.version>
     <h2.version>1.4.200</h2.version>
     <eclipselink.version>2.7.6</eclipselink.version>
     <jcahce.version>1.1.0</jcahce.version>
@@ -247,12 +248,30 @@
     </dependency>
     <!-- Java Cache API 1.0 End -->
 
-    <!-- Eclipselink/JPA 2.0 Begin -->
+    <!-- JPA 2.2 Begin -->
     <dependency>
       <groupId>javax.persistence</groupId>
       <artifactId>javax.persistence-api</artifactId>
       <version>2.2</version>
     </dependency>
+    <!-- JPA 2.2 End -->
+
+    <!-- Hibernate/JPA 2.2 Begin -->
+    <!--
+    <dependency>
+      <groupId>org.hibernate</groupId>
+      <artifactId>hibernate-core</artifactId>
+      <version>${hibernate-core.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.hibernate</groupId>
+      <artifactId>hibernate-entitymanager</artifactId>
+      <version>${hibernate-core.version}</version>
+    </dependency>
+    -->
+    <!-- Hibernate/JPA 2.2 Begin -->
+
+    <!-- Eclipselink/JPA 2.2 Begin -->
     <dependency>
       <groupId>org.eclipse.persistence</groupId>
       <artifactId>org.eclipse.persistence.jpa</artifactId>
@@ -274,14 +293,15 @@
       <artifactId>javax.persistence</artifactId>
       <version>2.2.1</version>
     </dependency>
-    <!-- Eclipselink/JPA 2.0 End -->
+    <!-- Eclipselink/JPA 2.2 End -->
 
     <!-- Conntion pool c3p0 Begin -->
     <dependency>
       <groupId>org.hibernate</groupId>
       <artifactId>hibernate-c3p0</artifactId>
-      <version>5.4.1.Final</version>
+      <version>${hibernate-core.version}</version>
     </dependency>
+
     <!-- Conntion pool c3p0 Begin -->
     <!-- Unit Testing -->
     <dependency>

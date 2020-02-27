@@ -11,7 +11,7 @@ import net.tiny.dao.test.LogDao;
 import net.tiny.unit.ws.Server;
 
 @Server(web=8080,rdb=9001,trace=true
-  ,config="src/test/resources/config/test-handlers.yml"
+  ,config="src/test/resources/config/entity-handlers.yml"
   ,persistence="persistence-eclipselink.properties"
   ,db="h2"
   ,before= {"create sequence xx_log_sequence increment by 1 start with 0;"
